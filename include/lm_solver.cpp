@@ -45,25 +45,27 @@ real compute_sum_of_squares(
 
 
 // Compute Jacobian using forward difference
+// WIP: Optimize by batch processing - compute all gradients at once rather than per parameter
+// NOTE: Since host code is there for demonstration purposes, I've just used simple loops here.
+// In actual code in ./src use BLAS and device code for GPU acceleration.
 void compute_jacobian(
     ModelFuncType model_func,   // model function pointer
     size_t n_points,            // number of data points
     const real* x,              // independent variable data points
     const real* params,         // current parameter estimates
+    real* perturbedParams,     // temporary storage for perturbed parameters
     size_t n_params,            // number of parameters
+    real* gradient,             // temporary gradient storage
     real* J                     // output Jacobian matrix (row-major: n_points x n_params)
 ) {
     for (size_t j = 0; j < n_params; ++j) {
         // Compute gradient for parameter j
-        real* gradient = new real[n_points];
-        getForwardDifference(model_func, model_func(&x[0], params), x, params, n_params, gradient);
+        getForwardDifference(model_func, model_func(&x[0], params), x, params, perturbedParams, n_params, gradient);
 
         // Fill in the Jacobian column for parameter j
         for (size_t i = 0; i < n_points; ++i) {
             J[i * n_params + j] = gradient[i];
         }
-
-        delete[] gradient;
     }
 }
 
@@ -125,6 +127,7 @@ void cholesky_solve(
 
 
 // Normal equations solver using Cholesky decomposition
+// NOTE: Tripple loop can be replaced with optimized BLAS calls for better performance
 bool solve_normal_equations(
     size_t n_points,            // number of data points
     size_t n_params,            // number of parameters
@@ -183,9 +186,11 @@ bool levenberg_marquardt_fit(
 ) {
     // Initializations
     real* function_values = new real[n_points];
+    real* gradients = new real[n_points];
     real* function_values_updated = new real[n_points];
     real* residuals = new real[n_points];
     real* residuals_updated = new real[n_points];
+    real* perturbedParams = new real[n_params];
     real* jacobian = new real[n_points * n_params];
     real* delta_params = new real[n_params];
     real* params_updated = new real[n_params];
@@ -198,7 +203,7 @@ bool levenberg_marquardt_fit(
         real chi_squared_current = compute_sum_of_squares(n_points, residuals);
 
         // Solve normal equations to get parameter updates
-        compute_jacobian(model_func, n_points, x, params, n_params, jacobian);
+        compute_jacobian(model_func, n_points, x, params, perturbedParams, n_params, gradients, jacobian);
         if (!solve_normal_equations(n_points, n_params, jacobian, residuals, delta_params, damping)) {
             return false; // Failed to solve
         }
@@ -213,6 +218,13 @@ bool levenberg_marquardt_fit(
         compute_residuals(n_points, y, function_values_updated, residuals_updated);
         real chi_squared_new = compute_sum_of_squares(n_points, residuals_updated);
 
+        // Compute norm of parameter changes for convergence check
+        real param_change_norm = 0.0;
+        for (size_t i = 0; i < n_params; ++i) {
+            param_change_norm += delta_params[i] * delta_params[i];
+        }
+        param_change_norm = std::sqrt(param_change_norm);
+
         // Decision making
         if (chi_squared_new < chi_squared_current) {
             // Accept new parameters
@@ -220,6 +232,7 @@ bool levenberg_marquardt_fit(
                 params[i] = params_updated[i];
             }
             // Update damping factor
+            // TODO: #1 Consider Adaptive Damping based on chi-squared reduction ratio
             damping *= 0.1;
         } else {
             // Reject new parameters, increase damping
@@ -227,20 +240,22 @@ bool levenberg_marquardt_fit(
         }
 
         // Check for convergence
-        // NOTE: This is a simple convergence check based only chi-squared change, omit criteria based on parameter changes
-        if (std::abs(chi_squared_current - chi_squared_new) < tol) {
+        if (std::abs(chi_squared_current - chi_squared_new) < tol || param_change_norm < tol) {
             // Converged
             for (size_t i = 0; i < n_params; ++i) {
                 params[i] = params_updated[i];
             }
+            break;
         }
     }
 
     // Clean up
     delete[] function_values;
+    delete[] gradients;
     delete[] function_values_updated;
     delete[] residuals;
     delete[] residuals_updated;
+    delete[] perturbedParams;
     delete[] jacobian;
     delete[] delta_params;
     delete[] params_updated;

@@ -41,16 +41,17 @@ constexpr T get_step_size() {
 
 
 // Forward difference gradient calculation
+// TODO: Tune the step size for better accuracy and stability.
 void * getForwardDifference(
     ModelFuncType modelFunc,
     real const modelValue, // Use this to avoid redundant double calculations
     real const* x,
     real const* parameterArray,
+    real* perturbedParameters,
     size_t const numParameters, // Need this since we provide a raw pointer
     real* gradientArray) {
 
     // Clone parameter array for perturbation
-    real * perturbedParameters = new real[numParameters];
     for (int i = 0; i < numParameters; ++i) {
         perturbedParameters[i] = parameterArray[i];
     }
