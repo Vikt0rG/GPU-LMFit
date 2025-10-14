@@ -1,6 +1,6 @@
 #pragma once
 
-#include "./types.h"
+#include "types.hpp"
 
 // Define a function type
 typedef float (*ModelFuncType)(const real* x, const real* parameterArray);

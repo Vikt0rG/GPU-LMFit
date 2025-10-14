@@ -1,7 +1,7 @@
-#include "types.h"
-#include "utils.h"
-#include "models.h"
-#include "forward_difference.h"
+#include "types.hpp"
+#include "utils.hpp"
+#include "models.hpp"
+#include "forward_difference.hpp"
 
 
 // Compute function values

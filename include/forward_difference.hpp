@@ -1,7 +1,7 @@
 #pragma once
 
-#include "types.h"
-#include "utils.h"
+#include "types.hpp"
+#include "utils.hpp"
 #include <cstddef>
 #include <algorithm>
 
@@ -48,7 +48,7 @@ void * getForwardDifference(
     real const* x,
     real const* parameterArray,
     real* perturbedParameters,
-    size_t const numParameters, // Need this since we provide a raw pointer
+    std::size_t const numParameters, // Need this since we provide a raw pointer
     real* gradientArray) {
 
     // Clone parameter array for perturbation
@@ -58,7 +58,7 @@ void * getForwardDifference(
 
     // Get gradient by perturbing each parameter
     for (int i = 0; i < numParameters; ++i) {
-        real step_size = get_step_size<real>() * std::max(fabs(parameterArray[i]), 1.0f);
+        real step_size = get_step_size<real>() * std::max(static_cast<real>(fabs(parameterArray[i])), static_cast<real>(1));
 
         perturbedParameters[i] = parameterArray[i] + step_size;
 
