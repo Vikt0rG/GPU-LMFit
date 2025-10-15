@@ -2,37 +2,92 @@
 #include "utils.hpp"
 #include "models.hpp"
 #include "forward_difference.hpp"
+#include "lm_solver.hpp"
 
+
+// LMFit constructor / destructor / helpers
+LMFit::LMFit() {
+}
+
+LMFit::~LMFit() {
+    delete[] function_values_;
+    delete[] function_values_updated_;
+    delete[] gradients_;
+    delete[] residuals_;
+    delete[] residuals_updated_;
+    delete[] perturbed_params_;
+    delete[] jacobian_;
+    delete[] delta_params_;
+    delete[] params_updated_;
+    delete[] JTJ_;
+    delete[] JTr_;
+}
+
+void LMFit::ensure_capacity(std::size_t n_points, std::size_t n_params) {
+    if (n_points > cap_points_) {
+        // free old point-sized buffers
+        delete[] function_values_;
+        delete[] function_values_updated_;
+        delete[] gradients_;
+        delete[] residuals_;
+        delete[] residuals_updated_;
+
+        cap_points_ = n_points;
+        function_values_ = new real[cap_points_];
+        function_values_updated_ = new real[cap_points_];
+        gradients_ = new real[cap_points_];
+        residuals_ = new real[cap_points_];
+        residuals_updated_ = new real[cap_points_];
+    }
+    if (n_params > cap_params_) {
+        // free old param-sized buffers
+        delete[] perturbed_params_;
+        delete[] jacobian_;
+        delete[] delta_params_;
+        delete[] params_updated_;
+        delete[] JTJ_;
+        delete[] JTr_;
+
+        cap_params_ = n_params;
+        perturbed_params_ = new real[cap_params_];
+        // allocate jacobian with current cap_points_ (may be zero until first ensure_capacity)
+        jacobian_ = new real[(cap_points_ > 0 ? cap_points_ : n_points) * cap_params_];
+        delta_params_ = new real[cap_params_];
+        params_updated_ = new real[cap_params_];
+        JTJ_ = new real[cap_params_ * cap_params_];
+        JTr_ = new real[cap_params_];
+    }
+}
 
 // Compute function values
-void compute_function_values(
+void LMFit::compute_function_values(
     size_t n_points,            // number of data points
     const real* x,              // independent variable data points
     const real* params,         // current parameter estimates
     ModelFuncType model_func,   // model function pointer (arg1: x, arg2: ptr to params)
     real* output_values         // model function values
 ) {
-    for (int i = 0; i < n_points; ++i) {
+    for (size_t i = 0; i < n_points; ++i) {
         output_values[i] = model_func(&x[i], params);
     }
 }
 
 
 // Compute residuals: r = y - f
-void compute_residuals(
-    int n_points,               // number of data points
+void LMFit::compute_residuals(
+    size_t n_points,               // number of data points
     const real* y,              // data points
     const real* f,              // model function values
     real* output_r              // residuals
 ) {
-    for (int i = 0; i < n_points; ++i) {
+    for (size_t i = 0; i < n_points; ++i) {
         output_r[i] = y[i] - f[i];
     }
 }
 
 
 // Compute chi-squared
-real compute_sum_of_squares(
+real LMFit::compute_sum_of_squares(
     size_t n_points,            // number of data points
     const real* r               // residuals
 ) {
@@ -48,7 +103,7 @@ real compute_sum_of_squares(
 // WIP: Optimize by batch processing - compute all gradients at once rather than per parameter
 // NOTE: Since host code is there for demonstration purposes, I've just used simple loops here.
 // In actual code in ./src use BLAS and device code for GPU acceleration.
-void compute_jacobian(
+void LMFit::compute_jacobian(
     ModelFuncType model_func,   // model function pointer
     size_t n_points,            // number of data points
     const real* x,              // independent variable data points
@@ -60,7 +115,7 @@ void compute_jacobian(
 ) {
     for (size_t j = 0; j < n_params; ++j) {
         // Compute gradient for parameter j
-        getForwardDifference(model_func, model_func(&x[0], params), x, params, perturbedParams, n_params, gradient);
+        get_forward_difference(model_func, model_func(&x[0], params), x, params, perturbedParams, n_params, gradient);
 
         // Fill in the Jacobian column for parameter j
         for (size_t i = 0; i < n_points; ++i) {
@@ -71,6 +126,7 @@ void compute_jacobian(
 
 
 // Cholesky decomposition
+// Cholesky decomposition (kept as free helper since it's a low-level op)
 bool cholesky_decompose(
     real* A,                    // Input matrix in row-major order
     size_t n                    // Matrix dimension, corresponding to n_params
@@ -121,14 +177,13 @@ void cholesky_solve(
         }
         x[i] = sum / L[i * n + i];
     }
-
     delete[] y;
 }
 
 
 // Normal equations solver using Cholesky decomposition
 // NOTE: Tripple loop can be replaced with optimized BLAS calls for better performance
-bool solve_normal_equations(
+bool LMFit::solve_normal_equations(
     size_t n_points,            // number of data points
     size_t n_params,            // number of parameters
     const real* J,              // Jacobian matrix (row-major: n_points x n_params)
@@ -136,44 +191,40 @@ bool solve_normal_equations(
     real* delta_params,         // output parameter updates
     real damping                // damping factor (lambda)
 ) {
-    real* JTJ = new real[n_params * n_params]();
-    real* JTr = new real[n_params]();
+    // Zero JTJ_ and JTr_
+    for (size_t idx = 0; idx < n_params * n_params; ++idx) JTJ_[idx] = 0.0;
+    for (size_t idx = 0; idx < n_params; ++idx) JTr_[idx] = 0.0;
 
     for (size_t i = 0; i < n_params; ++i) {
         for (size_t j = 0; j < n_params; ++j) {
             for (size_t k = 0; k < n_points; ++k) {
-                JTJ[i * n_params + j] += J[k * n_params + i] * J[k * n_params + j];
+                JTJ_[i * n_params + j] += J[k * n_params + i] * J[k * n_params + j];
             }
         }
     }
 
     // Add damping term to diagonal
     for (size_t i = 0; i < n_params; ++i) {
-        JTJ[i * n_params + i] += damping;
+        JTJ_[i * n_params + i] += damping;
     }
 
     for (size_t i = 0; i < n_params; ++i) {
         for (size_t k = 0; k < n_points; ++k) {
-            JTr[i] += J[k * n_params + i] * r[k];
+            JTr_[i] += J[k * n_params + i] * r[k];
         }
     }
 
-    if (!cholesky_decompose(JTJ, n_params)) {
-        delete[] JTJ;
-        delete[] JTr;
+    if (!cholesky_decompose(JTJ_, n_params)) {
         return false;
     }
 
-    cholesky_solve(JTJ, n_params, JTr, delta_params);
-
-    delete[] JTJ;
-    delete[] JTr;
+    cholesky_solve(JTJ_, n_params, JTr_, delta_params);
     return true;
 }
 
 
 // Levenberg-Marquardt parameter fitting routine
-bool levenberg_marquardt_fit(
+bool LMFit::levenberg_marquardt_fit(
     size_t n_points,            // number of data points
     size_t n_params,            // number of parameters
     const real* x,              // independent variable data points
@@ -184,44 +235,37 @@ bool levenberg_marquardt_fit(
     size_t max_iterations,      // maximum number of iterations
     real damping                // damping factor (lambda)
 ) {
-    // Initializations
-    real* function_values = new real[n_points];
-    real* gradients = new real[n_points];
-    real* function_values_updated = new real[n_points];
-    real* residuals = new real[n_points];
-    real* residuals_updated = new real[n_points];
-    real* perturbedParams = new real[n_params];
-    real* jacobian = new real[n_points * n_params];
-    real* delta_params = new real[n_params];
-    real* params_updated = new real[n_params];
+    // Ensure buffers are large enough
+    ensure_capacity(n_points, n_params);
+
     real chi_squared_current = std::numeric_limits<real>::infinity();
 
     while (max_iterations-- > 0) {
         // Compute current chi-squared    
-        compute_function_values(n_points, x, params, model_func, function_values);
-        compute_residuals(n_points, y, function_values, residuals);
-        real chi_squared_current = compute_sum_of_squares(n_points, residuals);
+        compute_function_values(n_points, x, params, model_func, function_values_);
+        compute_residuals(n_points, y, function_values_, residuals_);
+        real chi_squared_current = compute_sum_of_squares(n_points, residuals_);
 
         // Solve normal equations to get parameter updates
-        compute_jacobian(model_func, n_points, x, params, perturbedParams, n_params, gradients, jacobian);
-        if (!solve_normal_equations(n_points, n_params, jacobian, residuals, delta_params, damping)) {
+        compute_jacobian(model_func, n_points, x, params, perturbed_params_, n_params, gradients_, jacobian_);
+        if (!solve_normal_equations(n_points, n_params, jacobian_, residuals_, delta_params_, damping)) {
             return false; // Failed to solve
         }
 
         // Propose new parameters
         for (size_t i = 0; i < n_params; ++i) {
-            params_updated[i] = params[i] + delta_params[i];
+            params_updated_[i] = params[i] + delta_params_[i];
         }
 
         // Compute new chi-squared
-        compute_function_values(n_points, x, params_updated, model_func, function_values_updated);
-        compute_residuals(n_points, y, function_values_updated, residuals_updated);
-        real chi_squared_new = compute_sum_of_squares(n_points, residuals_updated);
+        compute_function_values(n_points, x, params_updated_, model_func, function_values_updated_);
+        compute_residuals(n_points, y, function_values_updated_, residuals_updated_);
+        real chi_squared_new = compute_sum_of_squares(n_points, residuals_updated_);
 
         // Compute norm of parameter changes for convergence check
         real param_change_norm = 0.0;
         for (size_t i = 0; i < n_params; ++i) {
-            param_change_norm += delta_params[i] * delta_params[i];
+            param_change_norm += delta_params_[i] * delta_params_[i];
         }
         param_change_norm = std::sqrt(param_change_norm);
 
@@ -229,7 +273,7 @@ bool levenberg_marquardt_fit(
         if (chi_squared_new < chi_squared_current) {
             // Accept new parameters
             for (size_t i = 0; i < n_params; ++i) {
-                params[i] = params_updated[i];
+                params[i] = params_updated_[i];
             }
             // Update damping factor
             // TODO: #1 Consider Adaptive Damping based on chi-squared reduction ratio
@@ -243,22 +287,11 @@ bool levenberg_marquardt_fit(
         if (std::abs(chi_squared_current - chi_squared_new) < tol || param_change_norm < tol) {
             // Converged
             for (size_t i = 0; i < n_params; ++i) {
-                params[i] = params_updated[i];
+                params[i] = params_updated_[i];
             }
             break;
         }
     }
-
-    // Clean up
-    delete[] function_values;
-    delete[] gradients;
-    delete[] function_values_updated;
-    delete[] residuals;
-    delete[] residuals_updated;
-    delete[] perturbedParams;
-    delete[] jacobian;
-    delete[] delta_params;
-    delete[] params_updated;
 
     return true;
 }
