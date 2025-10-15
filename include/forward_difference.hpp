@@ -2,8 +2,8 @@
 
 #include "types.hpp"
 #include "utils.hpp"
-#include <cstddef>
 #include <algorithm>
+#include <cmath>
 
 // This header is used to define the forward difference method for MyGpuFit.
 
@@ -41,8 +41,15 @@ constexpr T get_step_size() {
 
 
 // Forward difference gradient calculation
+// This function is header-only and marked inline so it can be included
+// in multiple translation units without violating the ODR.
+// Ownership contract:
+// - caller must allocate `perturbedParameters` (array of length numParameters)
+// - caller must allocate `gradientArray` (array of length numParameters)
+// - this function will NOT free any caller-owned memory
+// - uses raw pointers intentionally for later device-porting
 // TODO: Tune the step size for better accuracy and stability.
-void * getForwardDifference(
+inline void get_forward_difference(
     ModelFuncType modelFunc,
     real const modelValue, // Use this to avoid redundant double calculations
     real const* x,
@@ -52,13 +59,13 @@ void * getForwardDifference(
     real* gradientArray) {
 
     // Clone parameter array for perturbation
-    for (int i = 0; i < numParameters; ++i) {
+    for (std::size_t i = 0; i < numParameters; ++i) {
         perturbedParameters[i] = parameterArray[i];
     }
 
     // Get gradient by perturbing each parameter
-    for (int i = 0; i < numParameters; ++i) {
-        real step_size = get_step_size<real>() * std::max(static_cast<real>(fabs(parameterArray[i])), static_cast<real>(1));
+    for (std::size_t i = 0; i < numParameters; ++i) {
+        real step_size = get_step_size<real>() * std::max(static_cast<real>(std::fabs(parameterArray[i])), static_cast<real>(1));
 
         perturbedParameters[i] = parameterArray[i] + step_size;
 
@@ -66,7 +73,4 @@ void * getForwardDifference(
         gradientArray[i] = (modelValueForward - modelValue) / step_size;
         perturbedParameters[i] = parameterArray[i];  // Reset for next parameter
     }
-
-    // Clean up
-    delete[] perturbedParameters;
 }
