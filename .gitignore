@@ -7,3 +7,10 @@
 
 # VS
 .vscode/
+
+# Build files
+**/build/
+**/CMakeFiles/
+
+# Executables
+**/*.exe
