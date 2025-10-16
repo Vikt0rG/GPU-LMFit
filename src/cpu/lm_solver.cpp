@@ -3,6 +3,8 @@
 #include "models.hpp"
 #include "forward_difference.hpp"
 #include "lm_solver.hpp"
+#include <limits>
+#include <cmath>
 
 
 // LMFit constructor / destructor / helpers
@@ -21,6 +23,8 @@ LMFit::~LMFit() {
     delete[] params_updated_;
     delete[] JTJ_;
     delete[] JTr_;
+    delete[] fitted_params_;
+    delete[] chi2_history_;
 }
 
 void LMFit::ensure_capacity(std::size_t n_points, std::size_t n_params) {
@@ -47,6 +51,7 @@ void LMFit::ensure_capacity(std::size_t n_points, std::size_t n_params) {
         delete[] params_updated_;
         delete[] JTJ_;
         delete[] JTr_;
+        delete[] fitted_params_;
 
         cap_params_ = n_params;
         perturbed_params_ = new real[cap_params_];
@@ -56,7 +61,34 @@ void LMFit::ensure_capacity(std::size_t n_points, std::size_t n_params) {
         params_updated_ = new real[cap_params_];
         JTJ_ = new real[cap_params_ * cap_params_];
         JTr_ = new real[cap_params_];
+        // allocate storage for fitted params
+        fitted_params_ = new real[cap_params_];
     }
+}
+
+// Getters for fit metrics
+real LMFit::get_chi_squared() const {
+    return chi_squared_;
+}
+
+std::size_t LMFit::get_iterations() const {
+    return iterations_;
+}
+
+void LMFit::copy_optimized_params(real* out_params, std::size_t n_params) const {
+    if (!out_params) return;
+    // copy up to n_params or cap_params_
+    std::size_t to_copy = n_params;
+    if (to_copy > cap_params_) to_copy = cap_params_;
+    for (std::size_t i = 0; i < to_copy; ++i) out_params[i] = fitted_params_[i];
+}
+
+const real* LMFit::get_chi2_history_ptr() const {
+    return chi2_history_;
+}
+
+std::size_t LMFit::get_chi2_history_size() const {
+    return chi2_history_size_;
 }
 
 // Compute function values
@@ -124,7 +156,6 @@ void LMFit::compute_jacobian(
     }
 }
 
-
 // Cholesky decomposition
 // Cholesky decomposition (kept as free helper since it's a low-level op)
 bool cholesky_decompose(
@@ -150,7 +181,6 @@ bool cholesky_decompose(
     }
     return true;
 }
-
 
 // Solve Ax = b using Cholesky factors (A = L * L^T)
 void cholesky_solve(
@@ -179,7 +209,6 @@ void cholesky_solve(
     }
     delete[] y;
 }
-
 
 // Normal equations solver using Cholesky decomposition
 // NOTE: Tripple loop can be replaced with optimized BLAS calls for better performance
@@ -222,7 +251,6 @@ bool LMFit::solve_normal_equations(
     return true;
 }
 
-
 // Levenberg-Marquardt parameter fitting routine
 bool LMFit::levenberg_marquardt_fit(
     size_t n_points,            // number of data points
@@ -238,13 +266,26 @@ bool LMFit::levenberg_marquardt_fit(
     // Ensure buffers are large enough
     ensure_capacity(n_points, n_params);
 
-    real chi_squared_current = std::numeric_limits<real>::infinity();
+    chi_squared_ = std::numeric_limits<real>::infinity();
+    iterations_ = 0;
+    // allocate chi2 history buffer sized by max_iterations if necessary
+    if (max_iterations > chi2_history_cap_) {
+        delete[] chi2_history_;
+        chi2_history_ = new real[max_iterations * 2]; // small growth factor
+        chi2_history_cap_ = max_iterations * 2;
+    }
+    chi2_history_size_ = 0;
 
     while (max_iterations-- > 0) {
+        // count this iteration
+        ++iterations_;
         // Compute current chi-squared    
         compute_function_values(n_points, x, params, model_func, function_values_);
         compute_residuals(n_points, y, function_values_, residuals_);
         real chi_squared_current = compute_sum_of_squares(n_points, residuals_);
+
+        // record current chi^2
+        if (chi2_history_size_ < chi2_history_cap_) chi2_history_[chi2_history_size_++] = chi_squared_current;
 
         // Solve normal equations to get parameter updates
         compute_jacobian(model_func, n_points, x, params, perturbed_params_, n_params, gradients_, jacobian_);
@@ -261,6 +302,9 @@ bool LMFit::levenberg_marquardt_fit(
         compute_function_values(n_points, x, params_updated_, model_func, function_values_updated_);
         compute_residuals(n_points, y, function_values_updated_, residuals_updated_);
         real chi_squared_new = compute_sum_of_squares(n_points, residuals_updated_);
+
+        // record new chi^2 (proposed)
+        if (chi2_history_size_ < chi2_history_cap_) chi2_history_[chi2_history_size_++] = chi_squared_new;
 
         // Compute norm of parameter changes for convergence check
         real param_change_norm = 0.0;
@@ -289,9 +333,22 @@ bool LMFit::levenberg_marquardt_fit(
             for (size_t i = 0; i < n_params; ++i) {
                 params[i] = params_updated_[i];
             }
+            // update metrics and store optimized params
+            chi_squared_ = chi_squared_new;
+            for (size_t i = 0; i < n_params; ++i) fitted_params_[i] = params[i];
             break;
         }
+
+        // increment iteration counter
+        ++iterations_;
     }
+
+    // After loop, ensure metrics reflect final params
+    // compute final chi-squared and copy params
+    compute_function_values(n_points, x, params, model_func, function_values_);
+    compute_residuals(n_points, y, function_values_, residuals_);
+    chi_squared_ = compute_sum_of_squares(n_points, residuals_);
+    for (size_t i = 0; i < n_params; ++i) fitted_params_[i] = params[i];
 
     return true;
 }
