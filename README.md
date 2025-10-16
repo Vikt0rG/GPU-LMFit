@@ -1,4 +1,4 @@
-# MyFit
+# GPU-LMFit
 
 Lightweight Levenberg–Marquardt fitting library with CUDA-ready GPU codepaths.
 
