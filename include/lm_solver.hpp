@@ -2,7 +2,9 @@
 
 #include "types.hpp"
 #include "utils.hpp"
+#include <iostream>
 #include <cstddef>
+#include <cmath>
 
 // Stateful Levenberg-Marquardt solver object. The class owns reusable
 // buffers (function values, Jacobian, temporary vectors) to avoid
@@ -17,17 +19,20 @@ public:
 	// is cheap if called with the same sizes repeatedly.
 	void ensure_capacity(std::size_t n_points, std::size_t n_params);
 
-	// Public API (same logical operations as the previous free functions)
-	void compute_function_values(std::size_t n_points, const real* x, const real* params, ModelFuncType model_func, real* output_values);
+	// Descriptor-Based Public API
+	void compute_function_values(std::size_t n_points, const real* x, const ModelDescriptor& model, const real* params, real* output_values);
 	void compute_residuals(std::size_t n_points, const real* y, const real* f, real* output_r);
 	real compute_sum_of_squares(std::size_t n_points, const real* r);
-	void compute_jacobian(ModelFuncType model_func, std::size_t n_points, const real* x, const real* params, real* perturbedParams, std::size_t n_params, real* gradient, real* J);
+	void compute_jacobian(std::size_t n_points, const real* x, const ModelDescriptor& model, const real* params, real* perturbedParams, real* gradient, real* J);
 	bool solve_normal_equations(std::size_t n_points, std::size_t n_params, const real* J, const real* r, real* delta_params, real damping);
-	bool levenberg_marquardt_fit(std::size_t n_points, std::size_t n_params, const real* x, const real* y, real* params, ModelFuncType model_func, real tol, std::size_t max_iterations, real damping);
+	bool levenberg_marquardt_fit(std::size_t n_points, std::size_t n_params, const real* x, const real* y, real* params, const ModelDescriptor& model, real tol, std::size_t max_iterations, real damping);
 
 	// Get fit metrics after calling levenberg_marquardt_fit
 	real get_chi_squared() const;
 	std::size_t get_iterations() const;
+
+	// Print a human-readable summary of the last fit to stdout
+	void print_fit_metrics() const;
 
 	// Copy optimized parameters into the provided buffer (must be at least n_params long)
 	void copy_optimized_params(real* out_params, std::size_t n_params) const;
