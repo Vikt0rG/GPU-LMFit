@@ -11,7 +11,7 @@ include_directories(${CMAKE_SOURCE_DIR}/include)
 # Build CPU core library
 add_subdirectory(src/cpu)
 
-# Example: Gauss_1D executable (links to myfit_cpu)
+# Example: Gauss_1D executable (links to lmfit_cpu library)
 add_executable(Gauss_1D
     examples/CPU/Gauss_1D.cpp
 )
@@ -20,7 +20,7 @@ target_include_directories(Gauss_1D PRIVATE
     ${CMAKE_SOURCE_DIR}/include
 )
 
-target_link_libraries(Gauss_1D PRIVATE myfit_cpu)
+target_link_libraries(Gauss_1D PRIVATE lmfit_cpu)
 
 set_target_properties(Gauss_1D PROPERTIES
     CXX_STANDARD 11
