@@ -1,6 +1,5 @@
 #include "types.hpp"
 #include "utils.hpp"
-#include "models.hpp"
 #include "forward_difference.hpp"
 #include "lm_solver.hpp"
 #include <limits>
@@ -103,7 +102,6 @@ void LMFit::compute_function_values(
     }
 }
 
-
 // Compute residuals: r = y - f
 void LMFit::compute_residuals(
     size_t n_points,            // number of data points
@@ -115,7 +113,6 @@ void LMFit::compute_residuals(
         output_r[i] = y[i] - f[i];
     }
 }
-
 
 // Compute chi-squared
 real LMFit::compute_sum_of_squares(
@@ -155,8 +152,7 @@ void LMFit::print_fit_metrics() const {
 // Compute Jacobian using forward difference
 // WIP: Optimize by batch processing - compute all gradients at once rather than per parameter
 // NOTE: Since host code is there for demonstration purposes, I've just used simple loops here.
-// In actual code in ./src use BLAS and device code for GPU acceleration.
-
+// In actual code in ./src/gpu use BLAS and device code for GPU acceleration.
 void LMFit::compute_jacobian(
     std::size_t n_points,
     const real* x,
@@ -186,7 +182,6 @@ void LMFit::compute_jacobian(
     }
 }
 
-// Cholesky decomposition
 // Cholesky decomposition (kept as free helper since it's a low-level op)
 bool cholesky_decompose(
     real* A,                    // Input matrix in row-major order
