@@ -13,6 +13,7 @@ inline real gauss_func(const real* x, const real* p) {
     return A * static_cast<real>(std::exp(-0.5 * z * z));
 }
 
+
 inline void gauss_deriv(const real* x, const real* p, real* out) {
     real A = p[0];
     real mu = p[1];
@@ -39,9 +40,6 @@ void create_gaussian_data(
     y_data[i] = gauss_func(&x_data[i], true_params) + noise_level * ((rand() % 100) / 100.0f - 0.5f); // add noise
     }
 }
-
-
-// Example-level printing removed; use LMFit::print_fit_metrics() instead.
 
 
 bool fit() {
