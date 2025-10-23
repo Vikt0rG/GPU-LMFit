@@ -11,6 +11,9 @@ include_directories(${CMAKE_SOURCE_DIR}/include)
 # Build CPU core library
 add_subdirectory(src/cpu)
 
+# Python bindings
+add_subdirectory(src/binding)
+
 # Example: Gauss_1D executable (links to lmfit_cpu library)
 add_executable(Gauss_1D
     examples/CPU/Gauss_1D.cpp
