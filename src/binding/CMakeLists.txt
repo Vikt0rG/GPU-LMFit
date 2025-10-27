@@ -10,6 +10,8 @@ set(BINDING_SOURCES
     binding_cpu.cpp
 )
 
+# Add binding module target called cpu_lmfit here
+# NOTE: lmfit_cpu is a CPU library and cpu_lmfit is the binding library for a Python module
 add_library(cpu_lmfit MODULE ${BINDING_SOURCES})
 
 target_include_directories(cpu_lmfit PRIVATE
@@ -44,22 +46,24 @@ if(NOT DEFINED PY_PACKAGE_DIR)
     set(PY_PACKAGE_DIR "${CMAKE_BINARY_DIR}/staging/package/")
 endif()
 
-file(MAKE_DIRECTORY "${PY_PACKAGE_DIR}")
+file(MAKE_DIRECTORY "${CMAKE_SOURCE_DIR}/package/cpu_lmfit")
 
+# Copy the built extension directly into the source package directory so
+# importing `cpu_lmfit` works without additional staging steps.
 if(WIN32)
     add_custom_command(TARGET cpu_lmfit POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
             $<TARGET_FILE:cpu_lmfit>
-            "${PY_PACKAGE_DIR}/cpu_lmfit.pyd"
-        COMMENT "Staging cpu_lmfit built binary to ${PY_PACKAGE_DIR}/cpu_lmfit.pyd"
+            "${CMAKE_SOURCE_DIR}/package/cpu_lmfit/_cpu_lmfit.pyd"
+        COMMENT "Copy cpu_lmfit built binary to ${CMAKE_SOURCE_DIR}/package/cpu_lmfit/_cpu_lmfit.pyd"
     )
 else()
-    # Unix-like: use shared object suffix from the target file
+    # Unix-like: copy using shared object suffix
     add_custom_command(TARGET cpu_lmfit POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
             $<TARGET_FILE:cpu_lmfit>
-            "${PY_PACKAGE_DIR}/cpu_lmfit${CMAKE_SHARED_LIBRARY_SUFFIX}"
-        COMMENT "Staging cpu_lmfit built binary to ${PY_PACKAGE_DIR}"
+            "${CMAKE_SOURCE_DIR}/package/cpu_lmfit/_cpu_lmfit${CMAKE_SHARED_LIBRARY_SUFFIX}"
+        COMMENT "Copy cpu_lmfit built binary to ${CMAKE_SOURCE_DIR}/package/cpu_lmfit"
     )
 endif()
 
@@ -70,7 +74,7 @@ else()
     set(EXT_SUFFIX "${CMAKE_SHARED_LIBRARY_SUFFIX}")
 endif()
 
-set(DEST_PY "${PY_PACKAGE_DIR}/cpu_lmfit${EXT_SUFFIX}")
+set(DEST_PY "${CMAKE_SOURCE_DIR}/package/cpu_lmfit/_cpu_lmfit${EXT_SUFFIX}")
 
 # Ensure the path is considered by the generator's clean target
 set_property(DIRECTORY APPEND PROPERTY ADDITIONAL_MAKE_CLEAN_FILES "${DEST_PY}")

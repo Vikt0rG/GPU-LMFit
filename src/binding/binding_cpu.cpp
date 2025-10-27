@@ -45,7 +45,7 @@ static void py_model_deriv(const real* x, const real* params, real* out) {
 	for (std::size_t i = 0; i < g_model_n_params; ++i) out[i] = r[i];
 }
 
-PYBIND11_MODULE(cpu_lmfit, m) {
+PYBIND11_MODULE(_cpu_lmfit, m) {
 	m.doc() = "CPU-LMFit bindings for Levenberg-Marquardt fitting using Python and NumPy";
 
 	py::class_<LMFit>(m, "LMFit")

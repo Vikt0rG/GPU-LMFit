@@ -6,6 +6,7 @@ set(LMFit_CPU_SOURCES
     lm_solver.cpp
 )
 
+# Build CPU core library lmfit_cpu
 add_library(lmfit_cpu STATIC ${LMFit_CPU_SOURCES})
 target_include_directories(lmfit_cpu PUBLIC ${CMAKE_SOURCE_DIR}/include)
 

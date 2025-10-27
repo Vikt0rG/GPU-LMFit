@@ -1,0 +1,5 @@
+Metadata-Version: 2.4
+Name: cpu_lmfit
+Version: 0.1.0
+Summary: Python bindings for CPU-LMFit (prebuilt extension included)
+Dynamic: summary

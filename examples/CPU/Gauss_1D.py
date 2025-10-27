@@ -6,7 +6,6 @@ import math
 import random
 import numpy as np
 
-# Import the installed compiled extension module directly (cpu_lmfit)
 import cpu_lmfit
 
 
@@ -46,7 +45,7 @@ def fit():
 
     initial_params = np.array([3.0, 1.0, 2.0], dtype=float)
 
-    lm = cpu_lmfit.LMFit()
+    lm = cpu_lmfit.LMFit(n_points, n_params)
     # Wrapper expects numpy arrays and Python callables. We pass a model function that
     # accepts (x_scalar, params_array) and returns a scalar. For derivative, pass function
     # that returns array-like of length n_params.
