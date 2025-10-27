@@ -26,3 +26,14 @@ set_target_properties(_cpu_lmfit PROPERTIES
 	LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/package/cpu_lmfit
 	RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/package/cpu_lmfit
 )
+
+# Ensure a copy of the final artifact (including Python ABI filename tag) is placed
+# directly into the package folder with the exact target filename. This preserves
+# names like _cpu_lmfit.cp314-win_amd64.pyd regardless of generator/config directories.
+add_custom_command(TARGET _cpu_lmfit POST_BUILD
+	COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_SOURCE_DIR}/package/cpu_lmfit
+	COMMAND ${CMAKE_COMMAND} -E copy_if_different
+		$<TARGET_FILE:_cpu_lmfit>
+		${CMAKE_SOURCE_DIR}/package/cpu_lmfit/$<TARGET_FILE_NAME:_cpu_lmfit>
+	COMMENT "Copying python extension into package/cpu_lmfit"
+)
