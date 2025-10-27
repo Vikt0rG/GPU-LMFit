@@ -1,4 +1,3 @@
-
 cmake_minimum_required(VERSION 3.5)
 project(GPU-LMFit CXX)
 
@@ -11,10 +10,11 @@ include_directories(${CMAKE_SOURCE_DIR}/include)
 # Build CPU core library
 add_subdirectory(src/cpu)
 
-# Python bindings
+# Bindings
 add_subdirectory(src/binding)
 
-# Example: Gauss_1D executable (links to lmfit_cpu library)
+# Example: Gauss_1D executable 
+# links to lmfit_cpu library defined in src/cpu/CMakeLists.txt
 add_executable(Gauss_1D
     examples/CPU/Gauss_1D.cpp
 )
