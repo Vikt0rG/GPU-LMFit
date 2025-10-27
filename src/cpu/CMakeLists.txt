@@ -14,3 +14,11 @@ set_target_properties(lmfit_cpu PROPERTIES
     CXX_STANDARD 11
     CXX_STANDARD_REQUIRED YES
 )
+
+# Prefer static MSVC runtime when supported (CMake >= 3.15 property); fallback handled by generator flags.
+if (MSVC)
+    if(POLICY CMP0091)
+        # Use the static runtime (/MT) if policy is available
+        set_target_properties(lmfit_cpu PROPERTIES MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+    endif()
+endif()

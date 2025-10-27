@@ -9,8 +9,7 @@ This package re-exports symbols from the compiled extension module
 try:
 	from ._cpu_lmfit import *  # noqa: F401,F403
 except Exception:
-	# If the compiled extension is not present, keep the package importable
-	# so we can show a clearer error at runtime when functions are used.
-	pass
+	raise ImportError("Failed to import the cpu_lmfit extension module. "
+                      "Make sure the package is properly installed.")
 
 __all__ = [name for name in globals().keys() if not name.startswith('_')]

@@ -1,87 +1,28 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.10)
 
-project(GPU-LMFit-bindings CXX)
+# Include pybind11 from extern. Use the copy in the project root.
+add_subdirectory(${CMAKE_SOURCE_DIR}/extern/pybind11 ${CMAKE_BINARY_DIR}/extern/pybind11 EXCLUDE_FROM_ALL)
 
-# Create a module using pybind11 (extern included copy)
-# This simple approach uses the header-only pybind11 in extern/pybind11/include
+# Create the python extension module from source
+pybind11_add_module(_cpu_lmfit binding_cpu.cpp)
 
-# Add the binding source
-set(BINDING_SOURCES
-    binding_cpu.cpp
-)
+# Link the underlying CPU library into the module
+target_link_libraries(_cpu_lmfit PRIVATE lmfit_cpu)
 
-# Add binding module target called cpu_lmfit here
-# NOTE: lmfit_cpu is a CPU library and cpu_lmfit is the binding library for a Python module
-add_library(cpu_lmfit MODULE ${BINDING_SOURCES})
-
-target_include_directories(cpu_lmfit PRIVATE
-    ${CMAKE_SOURCE_DIR}/extern/pybind11/include
-    ${CMAKE_SOURCE_DIR}/include
-)
-
-# Link to the CPU library so bindings can call LMFit implementation
-target_link_libraries(cpu_lmfit PRIVATE lmfit_cpu)
-
-# Try to find Python includes/libs so Python.h is available
-find_package(PythonLibs REQUIRED)
-if(PYTHONLIBS_FOUND)
-    target_include_directories(cpu_lmfit PRIVATE ${PYTHON_INCLUDE_DIRS})
-    target_link_libraries(cpu_lmfit PRIVATE ${PYTHON_LIBRARIES})
+# Prefer static MSVC runtime for the extension if supported
+if (MSVC)
+	if(POLICY CMP0091)
+		set_target_properties(_cpu_lmfit PROPERTIES MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+	endif()
 endif()
 
-# On Windows, ensure the module file gets the proper suffix
-if (WIN32)
-    set_target_properties(cpu_lmfit PROPERTIES PREFIX "")
+# For MinGW/GNU toolchains, prefer static libgcc/libstdc++ to avoid distributing DLLs
+if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+	target_link_options(_cpu_lmfit PRIVATE "-static-libgcc" "-static-libstdc++")
 endif()
 
-set_target_properties(cpu_lmfit PROPERTIES
-    CXX_STANDARD 11
-    CXX_STANDARD_REQUIRED YES
-)
-
-# Stage the built extension into the build staging area instead of copying
-# into the source tree. This keeps build outputs out of source and supports
-# packaging from the staging directory (build/staging).
-if(NOT DEFINED PY_PACKAGE_DIR)
-    set(PY_PACKAGE_DIR "${CMAKE_BINARY_DIR}/staging/package/")
-endif()
-
-file(MAKE_DIRECTORY "${CMAKE_SOURCE_DIR}/package/cpu_lmfit")
-
-# Copy the built extension directly into the source package directory so
-# importing `cpu_lmfit` works without additional staging steps.
-if(WIN32)
-    add_custom_command(TARGET cpu_lmfit POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            $<TARGET_FILE:cpu_lmfit>
-            "${CMAKE_SOURCE_DIR}/package/cpu_lmfit/_cpu_lmfit.pyd"
-        COMMENT "Copy cpu_lmfit built binary to ${CMAKE_SOURCE_DIR}/package/cpu_lmfit/_cpu_lmfit.pyd"
-    )
-else()
-    # Unix-like: copy using shared object suffix
-    add_custom_command(TARGET cpu_lmfit POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            $<TARGET_FILE:cpu_lmfit>
-            "${CMAKE_SOURCE_DIR}/package/cpu_lmfit/_cpu_lmfit${CMAKE_SHARED_LIBRARY_SUFFIX}"
-        COMMENT "Copy cpu_lmfit built binary to ${CMAKE_SOURCE_DIR}/package/cpu_lmfit"
-    )
-endif()
-
-# Register the staged file with CMake's clean mechanism so `make clean` removes it
-if(WIN32)
-    set(EXT_SUFFIX ".pyd")
-else()
-    set(EXT_SUFFIX "${CMAKE_SHARED_LIBRARY_SUFFIX}")
-endif()
-
-set(DEST_PY "${CMAKE_SOURCE_DIR}/package/cpu_lmfit/_cpu_lmfit${EXT_SUFFIX}")
-
-# Ensure the path is considered by the generator's clean target
-set_property(DIRECTORY APPEND PROPERTY ADDITIONAL_MAKE_CLEAN_FILES "${DEST_PY}")
-
-# Extra: provide an explicit target to clean staged package files
-add_custom_target(package_clean
-    COMMAND ${CMAKE_COMMAND} -E rm -f "${DEST_PY}"
-    COMMAND ${CMAKE_COMMAND} -E rm -rf "${CMAKE_BINARY_DIR}/staging"
-    COMMENT "Cleaning staged Python package files at ${PY_PACKAGE_DIR}"
+# Optionally, place the built module directly into the python package folder
+set_target_properties(_cpu_lmfit PROPERTIES
+	LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/package/cpu_lmfit
+	RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/package/cpu_lmfit
 )

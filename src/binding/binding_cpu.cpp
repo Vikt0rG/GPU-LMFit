@@ -1,11 +1,11 @@
 // Python bindings for CPU-LMFit using pybind11.
 
-#include "../../extern/pybind11/include/pybind11/pybind11.h"
-#include "../../extern/pybind11/include/pybind11/numpy.h"
-#include "../../extern/pybind11/include/pybind11/stl.h"
+#include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
+#include <pybind11/numpy.h>
 
-#include "../../include/lm_solver.hpp"
-#include "../../include/utils.hpp"
+#include <lm_solver.hpp>
+#include <utils.hpp>
 
 namespace py = pybind11;
 
