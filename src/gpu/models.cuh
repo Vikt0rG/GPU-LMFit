@@ -3,7 +3,7 @@
 // NOTE: WIP
 // Here go all the inline model function declarations and definitions
 
-#include "types.hpp"
+#include "utils.hpp"
 
 // Example model function
 __device__ inline real gaussian_model(real const x, const real* p) {

@@ -1,4 +1,3 @@
-#include "types.hpp"
 #include "utils.hpp"
 #include "forward_difference.hpp"
 #include "lm_solver.hpp"

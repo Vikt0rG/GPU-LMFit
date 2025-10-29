@@ -4,7 +4,7 @@
 // Here go the declarations of kernels from kernels.cu
 
 #include <cuda_runtime.h>
-#include "types.hpp"
+#include "utils.hpp"
 
 // In example:
 // Kernel to compute residuals
