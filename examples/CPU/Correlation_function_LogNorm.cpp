@@ -3,7 +3,8 @@
 
 #include "lm_solver.hpp"
 #include <numeric>
-
+#include <vector>
+#include <tuple>
 
 real G_term(real z, real d) {
     if (z == 0.0f) {
@@ -25,7 +26,7 @@ real G_term(real z, real d) {
     if (z < d) {
         real prefactor = 2.0f * z_over_d * z_over_d * (1.0f - z_over_d * z_over_d);
         real denominator = 1.0f + sqrtf(1.0f - z_over_d * z_over_d);
-        term2 = prefactor * logf(z_over_d / denominator);
+        term2 = (denominator > 0.0f) ? prefactor * logf(z_over_d / denominator) : 0.0f;
     }
 
     real result = term1 + term2;
@@ -33,15 +34,13 @@ real G_term(real z, real d) {
 }
 
 
-real lognormal_distribution(
-    real x,
-    real s
-) {
+real lognormal_distribution(real x, real s) {
     real exponent = - 0.5f * (log(x) / s) * (log(x) / s);
     real denominator = s * x * sqrt(2.0f * M_PI);
 
     return (denominator > 1e-300) ? exp(exponent) / denominator : 0.0f;
 }
+
 
 std::pair<std::vector<real>, std::vector<real>> get_lognormal_distribution(
     real s,
