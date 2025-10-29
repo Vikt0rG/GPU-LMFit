@@ -1,0 +1,42 @@
+(main) PS D:\Code\GPU-LMFit\examples\CPU> python .\Correlation_function_LogNorm.py
+D:\Code\GPU-LMFit\examples\CPU\Correlation_function_LogNorm.py:86: DeprecationWarning: Conversion of an array with ndim > 0 to a scalar is deprecated, and will error in future. Ensure you extract a single element from your array before performing this operation. (Deprecated NumPy 1.25.)
+  y_data[i] = corr_isol_spheres_polydisp_lognorm([x_data[i]], true_params) + noise_level * (np.random.random() - 0.5)
+Analytic-derivative fit metrics:
+Iterations: 31
+Chi^2 history (per iteration):
+  [0] 1.03136
+  [1] 0.391239
+  [2] 0.0936269
+  [3] 0.0243571
+  [4] 0.00950671
+  [5] 0.0108447
+  [6] 0.010779
+  [7] 0.0101417
+  [8] 0.00687426
+  [9] 0.00353572
+  [10] 0.00398325
+  [11] 0.00271259
+  [12] 0.00438791
+  [13] 0.00152151
+  [14] 0.00124077
+  [15] 0.00130325
+  [16] 0.00101866
+  [17] 0.000989877
+  [18] 0.000963346
+  [19] 0.000941533
+  [20] 0.000922464
+  [21] 0.000913866
+  [22] 0.000902441
+  [23] 0.000903911
+  [24] 0.000903911
+  [25] 0.000903911
+  [26] 0.000903911
+  [27] 0.000903911
+  [28] 0.000903911
+  [29] 0.000903906
+  [30] 0.000903854
+  [31] 0.000903426
+Fitted params:
+  [0] = 0.219103
+  [1] = 9.09527
+  [2] = 0.92593

@@ -1,0 +1,32 @@
+(main) PS D:\Code\GPU-LMFit\examples\CPU> python .\Correlation_function_LogNorm.py
+D:\Code\GPU-LMFit\examples\CPU\Correlation_function_LogNorm.py:30: RuntimeWarning: divide by zero encountered in log
+  term2 = prefactor * np.log(z_over_d / denominator) # if z_over_d / denominator > 0.0 else 0.0
+D:\Code\GPU-LMFit\examples\CPU\Correlation_function_LogNorm.py:30: RuntimeWarning: invalid value encountered in multiply
+  term2 = prefactor * np.log(z_over_d / denominator) # if z_over_d / denominator > 0.0 else 0.0
+D:\Code\GPU-LMFit\examples\CPU\Correlation_function_LogNorm.py:88: DeprecationWarning: Conversion of an array with ndim > 0 to a scalar is deprecated, and will error in future. Ensure you extract a single element from your array before performing this operation. (Deprecated NumPy 1.25.)
+  y_data[i] = corr_isol_spheres_polydisp_lognorm([x_data[i]], true_params) + noise_level * (np.random.random() - 0.5)
+Analytic-derivative fit metrics:
+Iterations: 17
+Chi^2 history (per iteration):
+  [0] 2.02011
+  [1] 1.38873
+  [2] 1.08238
+  [3] 1.01416
+  [4] 1.00497
+  [5] 1.00478
+  [6] 0.998179
+  [7] 0.998013
+  [8] 0.997919
+  [9] 0.997867
+  [10] 0.99784
+  [11] 0.997837
+  [12] 0.99783
+  [13] 0.997826
+  [14] 0.997825
+  [15] 0.997824
+  [16] 0.997819
+  [17] 0.997818
+Fitted params:
+  [0] = 0.202635
+  [1] = 9.736
+  [2] = 0.269144
