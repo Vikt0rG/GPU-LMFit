@@ -14,19 +14,8 @@ add_subdirectory(src/cpu)
 # Bindings
 add_subdirectory(src/binding)
 
-# Example: Gauss_1D executable 
-# links to lmfit_cpu library defined in src/cpu/CMakeLists.txt
-add_executable(Gauss_1D
-    examples/CPU/Gauss_1D.cpp
-)
-
-target_include_directories(Gauss_1D PRIVATE
-    ${CMAKE_SOURCE_DIR}/include
-)
-
-target_link_libraries(Gauss_1D PRIVATE lmfit_cpu)
-
-set_target_properties(Gauss_1D PROPERTIES
-    CXX_STANDARD 11
-    CXX_STANDARD_REQUIRED YES
-)
+# Examples
+# Include the CPU examples directory which defines a helper function
+# `add_cpu_example()` and registers any example executables placed under
+# `examples/CPU`.
+add_subdirectory(examples/CPU)

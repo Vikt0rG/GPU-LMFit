@@ -37,7 +37,7 @@ void create_gaussian_data(
     real const upper_bound = 5.0;
     for (size_t i = 0; i < n_points; ++i) {
         x_data[i] = lower_bound + i * (upper_bound - lower_bound) / (n_points - 1);
-    y_data[i] = gauss_func(&x_data[i], true_params) + noise_level * ((rand() % 100) / 100.0f - 0.5f); // add noise
+        y_data[i] = gauss_func(&x_data[i], true_params) + noise_level * ((rand() % 100) / 100.0f - 0.5f); // add noise
     }
 }
 
