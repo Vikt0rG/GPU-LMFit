@@ -2,6 +2,7 @@
 #include "forward_difference.hpp"
 #include "lm_solver.hpp"
 #include <limits>
+#include <stdexcept>
 
 
 // LMFit constructor / destructor / helpers
@@ -97,7 +98,12 @@ void LMFit::compute_function_values(
     real* output_values
 ) {
     for (size_t i = 0; i < n_points; ++i) {
-        output_values[i] = model.func(&x[i], params);
+        real val = model.func(&x[i], params);
+        // Check for NaN or Inf and raise an error immediately
+        if (std::isnan(val) || !std::isfinite(val)) {
+            throw std::runtime_error("Model returned non-finite value at index " + std::to_string(i) + " or corresponding x value " + std::to_string(x[i]) + ": " + std::to_string(val));
+        }
+        output_values[i] = val;
     }
 }
 
@@ -289,6 +295,9 @@ bool LMFit::levenberg_marquardt_fit(
 ) {
     ensure_capacity(n_points, n_params);
 
+    // Clear any previously stored error message
+    last_error_message_.clear();
+
     chi_squared_ = std::numeric_limits<real>::infinity();
     iterations_ = 0;
     if (max_iterations > chi2_history_cap_) {
@@ -302,15 +311,27 @@ bool LMFit::levenberg_marquardt_fit(
     
         ++iterations_;
 
-        compute_function_values(n_points, x, model, params, function_values_);
-        compute_residuals(n_points, y, function_values_, residuals_);
+        try {
+            compute_function_values(n_points, x, model, params, function_values_);
+            compute_residuals(n_points, y, function_values_, residuals_);
+        } catch (const std::exception &ex) {
+            // Store the message and return failure so bindings can inspect
+            last_error_message_ = ex.what();
+            return false;
+        }
         real chi_squared_current = compute_sum_of_squares(n_points, residuals_);
 
         if (iterations_ == 1 && chi2_history_size_ < chi2_history_cap_) chi2_history_[chi2_history_size_++] = chi_squared_current;
 
         // compute jacobian using descriptor-aware function
-        compute_jacobian(n_points, x, model, params, perturbed_params_, gradients_, jacobian_);
+        try {
+            compute_jacobian(n_points, x, model, params, perturbed_params_, gradients_, jacobian_);
+        } catch (const std::exception &ex) {
+            last_error_message_ = ex.what();
+            return false;
+        }
         if (!solve_normal_equations(n_points, n_params, jacobian_, residuals_, delta_params_, damping)) {
+            // TODO: Add a report message if solver fails
             return false;
         }
 

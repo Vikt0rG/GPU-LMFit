@@ -96,6 +96,11 @@ PYBIND11_MODULE(_cpu_lmfit, m) {
 				g_model_deriv = py::object();
 				g_model_n_params = 0;
 
+				if (!ok) {
+					std::string msg = self.get_last_error_message();
+					if (!msg.empty()) throw py::value_error(msg);
+				}
+
 				return ok;
 			},
 			"Run Levenberg-Marquardt fit using Python callables and NumPy arrays",
@@ -105,6 +110,9 @@ PYBIND11_MODULE(_cpu_lmfit, m) {
 		.def("get_chi_squared", &LMFit::get_chi_squared)
 		.def("get_iterations", &LMFit::get_iterations)
 		.def("print_fit_metrics", &LMFit::print_fit_metrics)
+
+		// Expose last error message captured during fit (empty if none)
+		.def("get_last_error_message", &LMFit::get_last_error_message)
 
 		// Return optimized params as a new NumPy array of length n_params
 		.def("get_optimized_params", [](LMFit &self, std::size_t n_params) {

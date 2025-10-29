@@ -4,6 +4,7 @@
 #include <iostream>
 #include <cstddef>
 #include <cmath>
+#include <string>
 
 // Stateful Levenberg-Marquardt solver object. The class owns reusable
 // buffers (function values, Jacobian, temporary vectors) to avoid
@@ -70,4 +71,11 @@ private:
 	real* chi2_history_ = nullptr;
 	std::size_t chi2_history_size_ = 0; // number of entries currently stored
 	std::size_t chi2_history_cap_ = 0;  // allocated capacity
+
+	// Last error message captured during internal computations (e.g. NaN/Inf from model)
+	std::string last_error_message_;
+
+public:
+	// Retrieve a human-readable last error message set by internal checks (empty if none)
+	const std::string& get_last_error_message() const { return last_error_message_; }
 };
