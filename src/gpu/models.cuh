@@ -1,6 +1,6 @@
 #pragma once
 
-// NOTE: WIP
+// NOTE: Remove models.cuh since library relies on ModelDescriptor now.
 // Here go all the inline model function declarations and definitions
 
 #include "utils.hpp"

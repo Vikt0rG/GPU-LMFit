@@ -1,6 +1,7 @@
 #pragma once
 
-// NOTE: WIP
+// NOTE: Should be the same as lm_solver.hpp but for CUDA kernels.
+// Rename to lm_solver.cuh and move to include/
 // Here go the declarations of kernels from kernels.cu
 
 #include <cuda_runtime.h>
