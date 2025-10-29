@@ -21,11 +21,12 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 	target_link_options(_cpu_lmfit PRIVATE "-static-libgcc" "-static-libstdc++")
 endif()
 
-# Optionally, place the built module directly into the python package folder
-set_target_properties(_cpu_lmfit PROPERTIES
-	LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/package/cpu_lmfit
-	RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/package/cpu_lmfit
-)
+# Do NOT set target output directories into the source `package/` folder.
+# When CMake places a target's runtime/library output directory inside the
+# source tree, the build system (especially on MSVC) may also copy dependent
+# DLLs and other build artifacts (e.g. Release/) into that directory. Keep 
+# build outputs in the normal build tree and explicitly copy only the final 
+# Python extension below.
 
 # Ensure a copy of the final artifact (including Python ABI filename tag) is placed
 # directly into the package folder with the exact target filename. This preserves
