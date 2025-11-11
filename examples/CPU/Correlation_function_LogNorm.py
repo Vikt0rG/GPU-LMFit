@@ -1,9 +1,12 @@
 # Example implementation of correlation function for isolated
-# spheres with log-normal size distribution
+# spheres with log-normal size distribution. Including comparison
+# with the original lmfit package.
 
 import sys
+import time
 import numpy as np
 import cpu_lmfit
+import lmfit as lm_pkg
 
 
 def G_term(z, d):
@@ -92,22 +95,72 @@ def fit():
     n_points = 100
     n_params = 3
 
-    true_params = [0.2, 10.0, 0.0]  # s, scale, loc
+    true_params = [0.2, 10.0, 2.0]  # s, scale, loc
     x_data, y_data = create_correlation_data(true_params, n_points, 0.01)
 
-    initial_params = [1.3, 2.0, 1.0]
+    initial_params = [1, 1, 1]
 
-    lm = cpu_lmfit.LMFit()
-    lm.ensure_capacity(n_points, n_params)
+    # --- Run the original cpu_lmfit solver and time it ---
+    cpu_lm = cpu_lmfit.LMFit()
+    cpu_lm.ensure_capacity(n_points, n_params)
 
-    success = lm.levenberg_marquardt_fit(x_data, y_data, initial_params, corr_isol_spheres_polydisp_lognorm, None, 1e-6, 100, 0.01)
-    if success:
-        print("Analytic-derivative fit metrics:")
-        lm.print_fit_metrics()
+    t0 = time.perf_counter()
+    success_cpu = cpu_lm.levenberg_marquardt_fit(x_data, y_data, initial_params, corr_isol_spheres_polydisp_lognorm, None, 1e-6, 100, 0.01)
+    t1 = time.perf_counter()
+    cpu_time = t1 - t0
+
+    if success_cpu:
+        print("cpu_lmfit: fit succeeded (analytical-derivative). Time: {:.6f} s".format(cpu_time))
+        try:
+            # Print any available metrics (original behaviour)
+            cpu_lm.print_fit_metrics()
+        except Exception:
+            pass
     else:
-        print("Fitting failed.")
+        print("cpu_lmfit: fitting failed. Time: {:.6f} s".format(cpu_time))
 
-    return success
+    # --- Now run the lmfit package (Levenberg-Marquardt via 'leastsq') ---
+    # Build a residual function that computes model values for all x points
+    def residual(params, x, data):
+        pvals = [params['s'].value, params['scale'].value, params['loc'].value]
+        model = np.array([corr_isol_spheres_polydisp_lognorm(xi, pvals) for xi in x])
+        # residual = data - model
+        return data - model
+
+    params = lm_pkg.Parameters()
+    params.add('s', value=float(initial_params[0]))
+    params.add('scale', value=float(initial_params[1]))
+    params.add('loc', value=float(initial_params[2]))
+
+    minimizer = lm_pkg.Minimizer(residual, params, fcn_args=(x_data, y_data))
+
+    t2 = time.perf_counter()
+    result = minimizer.minimize(method='leastsq', max_nfev=1000)
+    t3 = time.perf_counter()
+    lmfit_time = t3 - t2
+
+    # Print summary for lmfit
+    print('\nlmfit (third-party) results:')
+    print('  Time: {:.6f} s'.format(lmfit_time))
+    try:
+        s_val = result.params['s'].value
+        scale_val = result.params['scale'].value
+        loc_val = result.params['loc'].value
+        print('s     =', s_val)
+        print('scale =', scale_val)
+        print('loc   =', loc_val)
+    except Exception as e:
+        print('Could not extract lmfit parameters:', e)
+
+    # Print fit report
+    try:
+        print('\nFull lmfit report:')
+        print(lm_pkg.fit_report(result))
+    except Exception:
+        pass
+
+    # Return both success flags and timings for possible programmatic use
+    return {'cpu_success': success_cpu, 'cpu_time': cpu_time, 'lmfit_result': result, 'lmfit_time': lmfit_time}
 
 
 if __name__ == '__main__':
