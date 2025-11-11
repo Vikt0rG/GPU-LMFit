@@ -23,6 +23,8 @@ LMFit::~LMFit() {
     delete[] JTr_;
     delete[] fitted_params_;
     delete[] chi2_history_;
+    // WIP: Calculation of parameter_stddevs_ not yet implemented 
+    delete[] parameter_stddevs_;
 }
 
 void LMFit::ensure_capacity(std::size_t n_points, std::size_t n_params) {
@@ -50,6 +52,7 @@ void LMFit::ensure_capacity(std::size_t n_points, std::size_t n_params) {
         delete[] JTJ_;
         delete[] JTr_;
         delete[] fitted_params_;
+        delete[] parameter_stddevs_;
 
         cap_params_ = n_params;
         perturbed_params_ = new real[cap_params_];
@@ -59,8 +62,9 @@ void LMFit::ensure_capacity(std::size_t n_points, std::size_t n_params) {
         params_updated_ = new real[cap_params_];
         JTJ_ = new real[cap_params_ * cap_params_];
         JTr_ = new real[cap_params_];
-        // allocate storage for fitted params
+        // allocate storage for fitted params and their stddevs
         fitted_params_ = new real[cap_params_];
+        parameter_stddevs_ = new real[cap_params_];
     }
 }
 
@@ -73,12 +77,15 @@ std::size_t LMFit::get_iterations() const {
     return iterations_;
 }
 
-void LMFit::copy_optimized_params(real* out_params, std::size_t n_params) const {
-    if (!out_params) return;
+void LMFit::copy_optimized_params(real* out_params, real* out_stddevs, std::size_t n_params) const {
+    if (!out_params || !out_stddevs) return;
     // copy up to n_params or cap_params_
     std::size_t to_copy = n_params;
     if (to_copy > cap_params_) to_copy = cap_params_;
-    for (std::size_t i = 0; i < to_copy; ++i) out_params[i] = fitted_params_[i];
+    for (std::size_t i = 0; i < to_copy; ++i) {
+        out_params[i] = fitted_params_[i];
+        out_stddevs[i] = parameter_stddevs_[i];
+    }
 }
 
 const real* LMFit::get_chi2_history_ptr() const {
@@ -134,9 +141,13 @@ real LMFit::compute_sum_of_squares(
 // Print a human-readable summary of the last fit to stdout
 void LMFit::print_fit_metrics() const {
     real fitted_local[16];
+    real stddev_local[16];
     // copy up to cap_params_
     std::size_t to_copy = cap_params_ < 16 ? cap_params_ : 16;
-    for (std::size_t i = 0; i < to_copy; ++i) fitted_local[i] = fitted_params_[i];
+    for (std::size_t i = 0; i < to_copy; ++i) {
+        fitted_local[i] = fitted_params_[i];
+        stddev_local[i] = parameter_stddevs_[i];
+    }
 
     // Iterations
     std::cout << "Iterations: " << iterations_ << std::endl;
@@ -150,7 +161,7 @@ void LMFit::print_fit_metrics() const {
     // Summarize fitted parameters (print up to 16)
     std::cout << "Fitted params:\n";
     for (std::size_t i = 0; i < to_copy; ++i) {
-        std::cout << "  [" << i << "] = " << fitted_local[i] << "\n";
+        std::cout << "  [" << i << "] = " << fitted_local[i] << " ± " << stddev_local[i] << "\n";
     }
 }
 

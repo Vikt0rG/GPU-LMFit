@@ -34,8 +34,8 @@ public:
 	// Print a human-readable summary of the last fit to stdout
 	void print_fit_metrics() const;
 
-	// Copy optimized parameters into the provided buffer (must be at least n_params long)
-	void copy_optimized_params(real* out_params, std::size_t n_params) const;
+	// Copy optimized parameters and their standard deviations into the provided buffer (must be at least n_params long)
+	void copy_optimized_params(real* out_params, real* out_stddevs, std::size_t n_params) const;
 
 	// Access chi^2 history across iterations (raw pointer, host-side)
 	const real* get_chi2_history_ptr() const;
@@ -64,8 +64,9 @@ private:
 	real chi_squared_ = 0.0;
 	std::size_t iterations_ = 0;
 
-	// Storage for the last optimized parameters (size = cap_params_)
+	// Storage for the last optimized parameters and their standard deviations (size = cap_params_)
 	real* fitted_params_ = nullptr;
+	real* parameter_stddevs_ = nullptr;
 
 	// History of chi^2 values across iterations (host-side raw buffer to ease device porting)
 	real* chi2_history_ = nullptr;
