@@ -9,6 +9,9 @@
 
 namespace py = pybind11;
 
+// TODO: Add a binding to model functions that need speedup:
+// Define functions in a c++ file and bind them here for direct use from Python.
+
 // Global (process-local) holders for Python callables used as trampolines.
 // These are set immediately before a fit and cleared afterwards. This is
 // not thread-safe, but is a simple way to bridge ModelDescriptor's raw
