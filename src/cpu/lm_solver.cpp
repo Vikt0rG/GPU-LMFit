@@ -1,6 +1,6 @@
-#include "utils.hpp"
-#include "forward_difference.hpp"
-#include "lm_solver.hpp"
+#include <utils.hpp>
+#include <forward_difference.hpp>
+#include <lm_solver.hpp>
 #include <limits>
 #include <stdexcept>
 
@@ -77,6 +77,17 @@ std::size_t LMFit::get_iterations() const {
     return iterations_;
 }
 
+void LMFit::copy_optimized_params(real* out_params, std::size_t n_params) const {
+    if (!out_params) return;
+    // copy up to n_params or cap_params_
+    std::size_t to_copy = n_params;
+    if (to_copy > cap_params_) to_copy = cap_params_;
+    for (std::size_t i = 0; i < to_copy; ++i) {
+        out_params[i] = fitted_params_[i];
+    }
+}
+
+/*
 void LMFit::copy_optimized_params(real* out_params, real* out_stddevs, std::size_t n_params) const {
     if (!out_params || !out_stddevs) return;
     // copy up to n_params or cap_params_
@@ -87,6 +98,7 @@ void LMFit::copy_optimized_params(real* out_params, real* out_stddevs, std::size
         out_stddevs[i] = parameter_stddevs_[i];
     }
 }
+*/
 
 const real* LMFit::get_chi2_history_ptr() const {
     return chi2_history_;
