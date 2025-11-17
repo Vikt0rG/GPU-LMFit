@@ -4,7 +4,7 @@
 #   make clean  -> remove build directory
 #   make run    -> run the Gauss_1D executable
 
-.PHONY: all clean run rebuild configure show-config
+.PHONY: default clean run rebuild configure show-config
 
 # Detect Windows (native) via the OS environment variable set by cmd/powershell
 ifeq ($(OS),Windows_NT)
@@ -15,14 +15,14 @@ CMAKE_CONFIGURE = cmake -S . -B build
 CMAKE_BUILD = cmake --build build --config Release
 endif
 
+default: build
+
 configure:
 	@echo $(if $(filter Windows_NT,$(OS)),"Detected Windows OS","Detected non-Windows OS")
 
 show-config:
 	@echo "CMAKE_BUILD: $(CMAKE_BUILD)"
 	@echo "CMAKE_CONFIGURE: $(CMAKE_CONFIGURE)"
-	
-all: build
 
 build:
 	$(CMAKE_CONFIGURE)
