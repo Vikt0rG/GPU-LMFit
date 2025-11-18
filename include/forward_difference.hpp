@@ -2,7 +2,6 @@
 
 #include <utils.hpp>
 #include <algorithm>
-#include <cmath>
 
 // This header is used to define the forward difference method for MyGpuFit.
 
