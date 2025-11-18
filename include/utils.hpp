@@ -2,6 +2,20 @@
 
 #include <cstddef>
 
+// Ensure math constants on MSVC and provide a fallback if M_PI is missing for any reason
+#ifndef _USE_MATH_DEFINES
+    #define _USE_MATH_DEFINES
+#endif
+#include <cmath>
+#ifndef M_PI
+    #define M_PI 3.14159265358979323846
+#endif
+
+// Include CUDA host defines if compiling with NVCC/CUDA-aware compiler
+#if defined(__CUDACC__)
+    #include <crt/host_defines.h>
+#endif
+
 // Precision
 #ifdef MYGPUFIT_DOUBLE
     #define real double
