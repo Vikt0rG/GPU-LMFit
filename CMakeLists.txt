@@ -1,16 +1,21 @@
 
 cmake_minimum_required(VERSION 3.10)
-project(GPU-LMFit CXX)
+project(GPU-LMFit LANGUAGES CXX CUDA)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Project include directories
-# ensure the top-level `include` and the `include/cpu` folders are on the compiler include path
-include_directories(${CMAKE_SOURCE_DIR}/make ${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/include/cpu)
+include_directories(
+    ${CMAKE_SOURCE_DIR}/make
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/include/cpu
+    ${CMAKE_SOURCE_DIR}/include/gpu
+)
 
-# Build CPU core library
+# Build core library
 add_subdirectory(src/cpu)
+add_subdirectory(src/gpu)
 
 # Bindings
 add_subdirectory(src/binding)
