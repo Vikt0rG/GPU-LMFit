@@ -67,7 +67,7 @@ bool fit() {
         y_data,
         initial_params,
         gauss_desc,
-        1e-6,       // tolerance
+        1e-6f,      // tolerance
         100,        // max iterations
         0.01f       // initial damping
     );
@@ -84,7 +84,7 @@ bool fit() {
         y_data,
         initial_params2,
         gauss_desc_numeric,
-        1e-6,
+        1e-6f,
         100,
         0.01f
     );

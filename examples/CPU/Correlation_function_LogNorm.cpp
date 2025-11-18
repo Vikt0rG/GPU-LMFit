@@ -1,7 +1,7 @@
 // Example implementation of correlation function for isolated 
 // spheres with log-normal size distribution
 
-#include "lm_solver.hpp"
+#include <lm_solver.hpp>
 #include <numeric>
 #include <vector>
 #include <tuple>
@@ -35,10 +35,12 @@ real G_term(real z, real d) {
 
 
 real lognormal_distribution(real x, real s) {
-    real exponent = - 0.5f * (log(x) / s) * (log(x) / s);
-    real denominator = s * x * sqrt(2.0f * M_PI);
+    real exponent = static_cast<real>(-0.5) * (log(x) / s) * (log(x) / s);
+    // Cast M_PI and the small threshold to `real` to avoid double->float conversion
+    real denominator = s * x * sqrt(static_cast<real>(2.0) * static_cast<real>(M_PI));
+    real tiny = static_cast<real>(1e-300);
 
-    return (denominator > 1e-300) ? exp(exponent) / denominator : 0.0f;
+    return (denominator > tiny) ? exp(exponent) / denominator : static_cast<real>(0);
 }
 
 
@@ -143,7 +145,7 @@ bool fit() {
         y_data,
         initial_params,
         corr_desc,
-        1e-6,       // tolerance
+        1e-6f,      // tolerance
         10,         // max iterations
         0.001f      // initial damping
     );
