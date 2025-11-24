@@ -21,7 +21,5 @@ add_subdirectory(src/gpu)
 add_subdirectory(src/binding)
 
 # Examples
-# Include the CPU examples directory which defines a helper function
-# `add_cpu_example()` and registers any example executables placed under
-# `examples/CPU`.
 add_subdirectory(examples/CPU)
+add_subdirectory(examples/GPU)

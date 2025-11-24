@@ -1,7 +1,6 @@
 #pragma once
 
 #include <utils.hpp>
-#include <cmath>
 
 struct GaussianModel {
     using value_type = real;

@@ -24,6 +24,10 @@ CMAKE_CONFIGURE_GPU = cmake -S . -B build-gpu
 CMAKE_BUILD_GPU = cmake --build build-gpu --config Release -- -j
 endif
 
+# Use default generator when building examples (i.e. examples/GPU/Gauss_1D.cpp)
+CMAKE_CONFIGURE_EXAMPLES = cmake -S . -B build-examples
+CMAKE_BUILD_EXAMPLES = cmake --build build-examples
+
 default: build
 
 configure:
@@ -37,6 +41,7 @@ build:
 	@echo "Building both CPU and GPU targets (build-cpu, build-gpu)"
 	$(MAKE) build-cpu
 	$(MAKE) build-gpu
+	$(MAKE) build-examples
 
 build-cpu:
 	@echo "Configuring and building CPU-only targets into build-cpu"
@@ -48,12 +53,18 @@ build-gpu:
 	$(CMAKE_CONFIGURE_GPU)
 	$(CMAKE_BUILD_GPU)
 
+build-examples:
+	@echo "Configuring and building example targets into build-examples"
+	$(CMAKE_CONFIGURE_EXAMPLES)
+	$(CMAKE_BUILD_EXAMPLES)
+
 rebuild: clean build
 
 clean:
 	@echo "Cleaning build artifacts..."
 	@if [ -d build-cpu ]; then rm -rf build-cpu; fi
 	@if [ -d build-gpu ]; then rm -rf build-gpu; fi
+	@if [ -d build-examples ]; then rm -rf build-examples; fi
 	@if [ -d build-msvc-cpu ]; then rm -rf build-msvc-cpu; fi
 	@if [ -d build-msvc-gpu ]; then rm -rf build-msvc-gpu; fi
 	@if [ -d package/cpu_lmfit/build ]; then rm -rf package/cpu_lmfit/build; fi
@@ -64,4 +75,4 @@ clean:
 	@if ls package/cpu_lmfit/_cpu_lmfit* 1> /dev/null 2>&1; then rm -f package/cpu_lmfit/_cpu_lmfit*; fi
 
 run:
-	./build/Gauss_1D.exe
+	./build-examples/Gauss_1D.exe
