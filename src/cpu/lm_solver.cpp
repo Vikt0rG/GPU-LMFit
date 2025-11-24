@@ -372,9 +372,9 @@ bool LMFit::levenberg_marquardt_fit(
 
         if (chi_squared_new < chi_squared_current) {
             for (size_t i = 0; i < n_params; ++i) params[i] = params_updated_[i];
-            damping *= 0.1;
+            damping *= 0.1f;
         } else {
-            damping *= 10.0;
+            damping *= 10.0f;
         }
 
         if (std::abs(chi_squared_current - chi_squared_new) < tol || param_change_norm < tol) {

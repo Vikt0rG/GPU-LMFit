@@ -3,7 +3,6 @@
 #include <utils.hpp>
 #include <iostream>
 #include <cstddef>
-#include <cmath>
 #include <string>
 
 // Stateful Levenberg-Marquardt solver object. The class owns reusable
